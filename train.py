@@ -1,9 +1,18 @@
 """
-SmartQBank — Marks-target question recommender — TRAINING SCRIPT (hardened)
-==========================================================================
-Same pipeline as before, but build_features() now scrubs every question to a
-guaranteed clean str and embeds defensively so sentence-transformers 5.x cannot
-misclassify any entry as a float.
+SmartQBank — Marks-target recommender — TRAINING SCRIPT (deploy-ready)
+=====================================================================
+Same pipeline as before, BUT now it bundles everything the lightweight server
+needs into recommender_model.pkl:
+  - the trained XGBoost model
+  - the precomputed importance score for every question
+  - the question rows (concept, marks, has_code, code_snippet, etc.)
+
+Because of this, the deployed server does NOT need sentence-transformers or
+torch — it just reads the precomputed scores. That keeps memory low enough for
+free hosting.
+
+Run:
+    python train.py --csv smartqbank_dataset.csv
 """
 
 import argparse
@@ -32,7 +41,6 @@ def _to_marks(series: pd.Series) -> pd.Series:
 
 
 def _clean_text(val) -> str:
-    """Force any cell into a clean non-empty string for the embedder."""
     if val is None:
         return "n/a"
     if isinstance(val, float) and np.isnan(val):
@@ -40,6 +48,17 @@ def _clean_text(val) -> str:
     s = str(val).replace("\x00", " ").strip()
     if s == "" or s.lower() == "nan":
         return "n/a"
+    return s
+
+
+def _clean_code(val) -> str:
+    if val is None:
+        return ""
+    if isinstance(val, float) and np.isnan(val):
+        return ""
+    s = str(val).replace("\x00", " ").strip()
+    if s == "" or s.lower() == "nan":
+        return ""
     return s
 
 
@@ -56,15 +75,21 @@ def load_data(csv_path: str) -> pd.DataFrame:
     df["Has_Code"] = _to_binary(df["Has_Code"])
     df = df.drop(columns=[c for c in ("Diagram",) if c in df.columns])
 
+    if "Code_Snippet" in df.columns:
+        df["Code_Snippet"] = df["Code_Snippet"].map(_clean_code)
+    else:
+        df["Code_Snippet"] = ""
+
     for col in ("Concept", "Question", "Subject"):
         df[col] = df[col].astype(str).str.strip()
 
     before = len(df)
     df = df[(df["Concept"] != "") & (df["Concept"].str.lower() != "nan")]
     df = df[(df["Question"] != "") & (df["Question"].str.lower() != "nan")]
+    df = df[(df["Subject"] != "") & (df["Subject"].str.lower() != "nan")]
     dropped = before - len(df)
     if dropped:
-        print(f"[load] dropped {dropped} rows with blank Concept/Question")
+        print(f"[load] dropped {dropped} rows with blank Concept/Question/Subject")
 
     df = df.reset_index(drop=True)
     print(f"[load] {len(df)} usable questions across "
@@ -97,7 +122,6 @@ def build_labels(df: pd.DataFrame) -> pd.DataFrame:
     concept_df["label"] = (concept_df["concept_score"] >= concept_df["thr"]).astype(int)
     df = df.merge(concept_df[["Subject", "Concept", "label"]],
                   on=["Subject", "Concept"], how="left")
-    # Drop any rows whose label didn't resolve in the merge (avoids NaN->int).
     n_before = len(df)
     df = df[df["label"].notna()].copy()
     df["label"] = df["label"].astype(int)
@@ -106,40 +130,29 @@ def build_labels(df: pd.DataFrame) -> pd.DataFrame:
     df = df.reset_index(drop=True)
     pos = int(df["label"].sum())
     n_imp = int(concept_df["label"].sum())
-    print(f"[label] top-30% concepts marked important: {n_imp}/{len(concept_df)} "
-          f"concepts -> {pos}/{len(df)} questions positive ({pos / len(df):.1%}); "
-          f"question-level skew is expected (important concepts repeat more)")
+    print(f"[label] top-30% concepts important: {n_imp}/{len(concept_df)} concepts "
+          f"-> {pos}/{len(df)} questions positive ({pos/len(df):.1%})")
     return df
 
 
-def build_features(df: pd.DataFrame, embedder: SentenceTransformer):
-    # Hardened: every item is a guaranteed clean python str.
+def build_embeddings(df: pd.DataFrame, embedder):
     texts = [_clean_text(q) for q in df["Question"].tolist()]
-    assert all(isinstance(t, str) and t != "" for t in texts), "non-str slipped through"
     print(f"[feat] embedding {len(texts)} questions with {EMBED_MODEL} ...")
-
-    # Embed in explicit small batches so any single odd entry is isolated.
     chunks = []
-    BATCH = 32
-    for i in range(0, len(texts), BATCH):
-        part = texts[i:i + BATCH]
-        vecs = embedder.encode(part, convert_to_numpy=True, show_progress_bar=False)
+    for i in range(0, len(texts), 32):
+        vecs = embedder.encode(texts[i:i + 32], convert_to_numpy=True,
+                               show_progress_bar=False)
         chunks.append(np.asarray(vecs, dtype=np.float32))
-        if (i // BATCH) % 10 == 0:
-            print(f"   ...{min(i + BATCH, len(texts))}/{len(texts)}")
+        if (i // 32) % 10 == 0:
+            print(f"   ...{min(i + 32, len(texts))}/{len(texts)}")
     emb = np.vstack(chunks)
     emb = emb / (np.linalg.norm(emb, axis=1, keepdims=True) + 1e-12)
-
-    numeric = df[["Marks", "repeat_count", "Has_Code"]].to_numpy(dtype=float)
-    X = np.hstack([emb, numeric])
-    y = df["label"].to_numpy(dtype=int)
-    print(f"[feat] X shape = {X.shape} (emb {emb.shape[1]} + numeric 3)")
-    return X, y
+    return emb
 
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--csv", default="questions.csv")
+    ap.add_argument("--csv", default="smartqbank_dataset.csv")
     ap.add_argument("--out", default="recommender_model.pkl")
     args = ap.parse_args()
 
@@ -148,7 +161,11 @@ def main():
     df = build_labels(df)
 
     embedder = SentenceTransformer(EMBED_MODEL)
-    X, y = build_features(df, embedder)
+    emb = build_embeddings(df, embedder)
+    numeric = df[["Marks", "repeat_count", "Has_Code"]].to_numpy(dtype=float)
+    X = np.hstack([emb, numeric])
+    y = df["label"].to_numpy(dtype=int)
+    print(f"[feat] X shape = {X.shape} (emb {emb.shape[1]} + numeric 3)")
 
     if len(np.unique(y)) < 2:
         raise SystemExit("[error] only one class present — check data/threshold.")
@@ -173,14 +190,21 @@ def main():
     print(classification_report(y_te, y_pred, digits=3))
     print("============================================\n")
 
+    # Precompute importance for EVERY question, so the server needs no model math.
+    importance_all = clf.predict_proba(X)[:, 1]
+
+    # Bundle the lightweight data the deployed server will read.
+    questions_table = df[["Subject", "Concept", "Question", "Marks",
+                          "repeat_count", "Has_Code", "Code_Snippet"]].copy()
+    questions_table["importance"] = importance_all
+
     bundle = {
-        "model": clf,
-        "embed_model_name": EMBED_MODEL,
-        "numeric_cols": ["Marks", "repeat_count", "Has_Code"],
-        "important_quantile": IMPORTANT_QUANTILE,
+        "questions": questions_table.to_dict(orient="records"),
+        "subjects": sorted(df["Subject"].astype(str).unique().tolist()),
     }
     joblib.dump(bundle, args.out)
-    print(f"[save] wrote {args.out}")
+    print(f"[save] wrote {args.out} "
+          f"({len(bundle['questions'])} scored questions, ready for free hosting)")
 
 
 if __name__ == "__main__":

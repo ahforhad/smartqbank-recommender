@@ -22535,22 +22535,22 @@ Data Structures,Metropolitan University,Spring 2024,Semester Final,4,Data Struct
 Q1.Suppose you have a list of phone numbers that you frequently look up and insert numbers into. Which data structure would be best suited for the list? Justify your answer.
 
 Q2.Suppose someone is sending integer numbers to you once a minute for an indefinite amount of time. Which data structure would you use to store the numbers? Justify your answer.",No,,
-Commputer Algorithms,Metropolitan University,Summer 2024,Semester Final,10,Matrix Multiplication,"Three matrices are given with their dimensions:
+Computer Algorithms,Metropolitan University,Summer 2024,Semester Final,10,Matrix Multiplication,"Three matrices are given with their dimensions:
 
                A1 = 2 * 6,  A2 = 6 * 7,  A3 = 7 * 3  &  A4 = 3 * 9
 
  Using the dynamic programming approach for Matrix Chain Multiplication,
    i) Find minimum number of multiplications required for multiplying all matrices.
    ii) Find the Optimal Order of Multiplication.",No,,
-Commputer Algorithms,Metropolitan University,Summer 2024,Semester Final,8,Minimum Spanning Tree,Find two different (if exists) Minimum Spanning Trees from the following graph using Prim's and Kruskal's algorithm.,No,,
-Commputer Algorithms,Metropolitan University,Summer 2024,Semester Final,2,Minimum Spanning Tree,Write two differences between the Prim's and Kruskal's algorithms.,No,,
-Commputer Algorithms,Metropolitan University,Summer 2024,Semester Final,8,Graph Traversal ,Traverse the following graph in BFS and DFS order. Show the implementation process using stack or queue. Assume that U is the starting node.,No,,
-Commputer Algorithms,Metropolitan University,Summer 2024,Semester Final,2,Dijkstra Algorithm,Suppose the same graph has both positive and negative weights. Which algorithm would you use to find the shortest path from the starting node U? Justify your answer.,No,,
-Commputer Algorithms,Metropolitan University,Summer 2024,Semester Final,7,Dijkstra Algorithm,Find the single-source shortest path distance from the following graph considering node M as the source.,No,,
-Commputer Algorithms,Metropolitan University,Summer 2024,Semester Final,3,Queue,Which data structure does your selected algorithm use? Why is the data structure selection crucial to the algorithm's correctness?,No,,
-Commputer Algorithms,Metropolitan University,Summer 2024,Semester Final,10,Floyd Warshall Algorithm,Find All Pair Shortest Path from the following graph. Show all steps.,No,,
-Commputer Algorithms,Metropolitan University,Summer 2024,Semester Final,2,Dijkstra Algorithm,Consider the following graph. Which algorithm would you use to find the shortest path from one node to all other nodes? Justify your answer.,No,,
-Commputer Algorithms,Metropolitan University,Summer 2024,Semester Final,8,Bellman Ford Algorithm,"Answer the following questions
+Computer Algorithms,Metropolitan University,Summer 2024,Semester Final,8,Minimum Spanning Tree,Find two different (if exists) Minimum Spanning Trees from the following graph using Prim's and Kruskal's algorithm.,No,,
+Computer Algorithms,Metropolitan University,Summer 2024,Semester Final,2,Minimum Spanning Tree,Write two differences between the Prim's and Kruskal's algorithms.,No,,
+Computer Algorithms,Metropolitan University,Summer 2024,Semester Final,8,Graph Traversal ,Traverse the following graph in BFS and DFS order. Show the implementation process using stack or queue. Assume that U is the starting node.,No,,
+Computer Algorithms,Metropolitan University,Summer 2024,Semester Final,2,Dijkstra Algorithm,Suppose the same graph has both positive and negative weights. Which algorithm would you use to find the shortest path from the starting node U? Justify your answer.,No,,
+Computer Algorithms,Metropolitan University,Summer 2024,Semester Final,7,Dijkstra Algorithm,Find the single-source shortest path distance from the following graph considering node M as the source.,No,,
+Computer Algorithms,Metropolitan University,Summer 2024,Semester Final,3,Queue,Which data structure does your selected algorithm use? Why is the data structure selection crucial to the algorithm's correctness?,No,,
+Computer Algorithms,Metropolitan University,Summer 2024,Semester Final,10,Floyd Warshall Algorithm,Find All Pair Shortest Path from the following graph. Show all steps.,No,,
+Computer Algorithms,Metropolitan University,Summer 2024,Semester Final,2,Dijkstra Algorithm,Consider the following graph. Which algorithm would you use to find the shortest path from one node to all other nodes? Justify your answer.,No,,
+Computer Algorithms,Metropolitan University,Summer 2024,Semester Final,8,Bellman Ford Algorithm,"Answer the following questions
 :i) Find the shortest distance from the source node A to all other nodes.
 ii) Using your own graph, prove that the Bellman-Ford algorithm doesn't work when a graph contains a negative weight cycle.",No,,
 Data Structures,"Daffodil International University",Spring 2026,Mid Term,4, Linked List,"Implement a C program using structure, pointers and dynamic memory allocation to create the above linked list (use your nickname as the common node name). Then, display all the information stored in the linked list.",No,,
@@ -22859,3 +22859,111 @@ Data Structures,"Daffodil International University",Spring 2026,Semester Final,
 Draw the updated tree after deleting the smallest execution time related node from the tree.",No,,
 Data Structures,"Daffodil International University",Spring 2026,Semester Final,6,Breadth First Search,"Show the step-by-step procedure for finding the shortest path from node A to node F using either BFS or DFS and justify your chosen technique. (Refer to the given directed graph with nodes A, B, C, D, E, F)",No,,
 Data Structures,"Daffodil International University",Spring 2026,Semester Final,4,Topological Sort,Apply the concept of topological sort to find the orderings of the above graph.,No,,
+Structured Programming,Metropolitan University,Summer 2024,Semester Final,5,Array,"Write a C program to find the minimum value in the following array:
+
+                                            int arr[] = {10, 8, 12, -4, 2};",No,,
+Structured Programming,Metropolitan University,Summer 2024,Semester Final,5,Functions,Analyze the differences between “Call by Value” and “Call by Reference”.Explain this concept with a proper example in C.,No,,
+Structured Programming,Metropolitan University,Summer 2024,Semester Final,5,Nested Loop,Determine the output of the following code segment.,Yes,"   for(int i=0; i<5; i++) {
+       printf(""Easy Question\n"");
+       for(int j=0; j<2; j++) {
+           if(i % 2 == 1)
+               continue;
+           printf(""Hi "");
+       }
+   }",
+Structured Programming,Metropolitan University,Summer 2024,Semester Final,3,Functions,"Let int x = 247, y = 357. Now, write a proper C program to swap x and y.
+",No,,
+Structured Programming,Metropolitan University,Summer 2024,Semester Final,3,Conditional Statements,"What is the 9-th Lucas Number (L9)? 
+The Lucas Numbers Lₙ are defined as follows:
+",No,,
+Structured Programming,Metropolitan University,Summer 2024,Semester Final,4,Functions,"Consider the following recursive function in C:
+
+Q.Calculate the value of Fun(20).",Yes,"int Fun(int n) {
+       if (n == 1)
+           return 1;
+       return (2 * n - 1) + Fun(n - 1);
+   }
+", 
+Structured Programming,Metropolitan University,Summer 2024,Semester Final,1,Array,"Consider, double temp[501]; Determine how much memory (in bytes) will be allocated for the temp array.",No,,
+Structured Programming,Metropolitan University,Summer 2024,Semester Final,2,Switch Case ,Explain the difference between break and continue keywords.,No,,
+Structured Programming,Metropolitan University,Summer 2024,Semester Final,2,Operators,"int p = 121, q = 2002; printf(""%4X %4X"", p, q); What will be the output?
+",No,,
+Structured Programming,Metropolitan University,Summer 2024,Semester Final,5,Conditional Statements,Write a C program to check if a character entered by user is a vowel or a consonant.,No,,
+Structured Programming,Metropolitan University,Summer 2024,Semester Final,5,Recursion,Write a recursive function in C to calculate the factorial of a given number.,No,,
+Structured Programming,Metropolitan University,Summer 2024,Semester Final,5,Nested Loop ,Write the output of the following program.,Yes,"#include <stdio.h>
+int main()
+{
+    int i, j, k, x = 0;
+    for (i = 1; i <= 3; i++) {
+        for (j = 1; j <= 3; j++) {
+            k = (i + j - 1);
+            if (k % 2 == 0) {
+                x += k;
+            }
+            else if (k % 3 == 0) {
+                x += k - 2;
+            }
+            printf(""%d "", x);
+        }
+    }
+    printf(""x = %d\n"", x);
+    return 0;
+}",
+Structured Programming,Metropolitan University,Summer 2024,Semester Final,2,Pointers,What is pointer in C? Differentiate between ptr and *ptr.,No,,
+Structured Programming,Metropolitan University,Summer 2024,Semester Final,3,Pointers,"Analyze the following function Box and determine its purpose, identify any errors, and predict the output of the call Box(237, 327):",Yes,"void Box(int *a, int *b)
+{
+    int s1 = *a;
+    *a = *b;
+    *b = s2;
+}",
+Structured Programming,Metropolitan University,Summer 2024,Semester Final,5,Structure,"Create a simple Book Management System for a small library. Define a struct to represent a book with the following fields: title, author, and price. Then, write a function to display the details of a book.
+",No,,
+Data Structures,Metropolitan University,Spring 2025,Semester Final,4,Insertion Sort,"Consider the array: Z, B, O, P, Q, M, N, Z, A, B
+
+
+Sort the array in ascending order using Insertion Sort algorithm and show each step. Take alphabetical order in account. ",No,,
+Data Structures,Metropolitan University,Spring 2025,Semester Final,3,Binary Search,"Consider the array: Z, B, O, P, Q, M, N, Z, A, B
+1(a). Sort the array in ascending order using Insertion Sort algorithm and show each step. Take alphabetical order in account. 
+
+Q. Apply Binary Search to search ‘E’ in the sorted array from 1(a) and show each step. Discuss the difference between Array and Linked List. 
+",No,,
+Data Structures,Metropolitan University,Spring 2025,Semester Final,2,Linked List,State the differences between singly and doubly linked lists,No,,
+Data Structures,Metropolitan University,Spring 2025,Semester Final,1,Linked List,Direct access of any node of a linked list: Possible or Impossible? Provide an explanation for your answer. ,No,,
+Data Structures,Metropolitan University,Spring 2025,Semester Final,4,Infix to Postfix,"Convert the given Infix expression into a Postfix expression using a Stack and show each step:
+
+                                               A^3^2 (B*C – (E+F) / D) ",No,,
+Data Structures,Metropolitan University,Spring 2025,Semester Final,2,Prefix evaluation,"Evaluate the following Prefix Expression using a Stack where A = 5, B = 6, C = 2, D = 5, E = 19:
+
+                                                * + A / B C – D E 
+",No,,
+Data Structures,Metropolitan University,Spring 2025,Semester Final,4,Queue,"An empty Circular Queue is given of size 2. Perform the following operations and show front and rear value at each step (Write overflow/underflow if they occur in any case). 
+
+   1. Dequeue()
+   2. Enqueue(T)
+   3. Enqueue(O)
+   4. Enqueue(P)
+   5. Dequeue()
+   6. Enqueue(Q)
+   7. Dequeue()
+   8. Dequeue()",No,,
+Data Structures,Metropolitan University,Spring 2025,Semester Final,10,Binary Search Tree,"Q. Construct a binary search tree from the following input sequence:
+
+                    {50, 30, 70, 20, 40, 60, 80, 10, 25, 35, 45, 55, 65, 75, 85}
+
+Q1.Insert 42 and Delete 65 from the BST constructed in Question 1 and show step-by-step procedure of insertion and deletion. 
+Q2.Show in-order, pre-order and post-order traversal for the tree constructed in Q.1",No,,
+Data Structures,Metropolitan University,Spring 2025,Semester Final,10,Binary Tree,"Let’s assume the in-order, post-order traversals are:
+In-order: 1, 12, 13, 3, 5, 2, 4, 6, 11, 10, 8, 7, 14, 9, 15
+Post-order: 13, 12, 3, 1, 5, 4, 11, 6, 2, 8, 14, 15, 9, 7, 10
+Q. Construct a binary tree.
+
+Answer the following questions based on the resultant tree from Q
+i. What is the height of the tree?
+ii. Which are the internal nodes?
+iii. Which are the leaf nodes?
+iv. Is the generated tree a Complete Binary Tree?
+v. Which nodes are ancestors of 12?",No,,
+Data Structures,Metropolitan University,Spring 2025,Semester Final,5,Breadth First Search,Traverse the following graph in BFS order. Show the implementation process using stack or queue. Assume that A is the starting node.,No,,
+Data Structures,Metropolitan University,Spring 2025,Semester Final,5,Depth First Search,Traverse the following graph in DFS order. Show the implementation process using stack or queue. Assume that A is the starting node.,No,,
+Data Structures,Metropolitan University,Spring 2025,Semester Final,5,Minimum Spanning Tree,Apply Kruskal’s algorithm to find the Minimum Spanning Tree (MST) for the graph. Calculate the total weight of the MST,No,,
+Data Structures,Metropolitan University,Spring 2025,Semester Final,5,Dijkstra Algorithm,Find the shortest path using the Dijkstra algorithm where the source vertex is A using the graph ,No,,
