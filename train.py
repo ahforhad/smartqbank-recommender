@@ -1,15 +1,13 @@
 """
 SmartQBank — Marks-target recommender — TRAINING SCRIPT (deploy-ready)
 =====================================================================
-Same pipeline as before, BUT now it bundles everything the lightweight server
-needs into recommender_model.pkl:
-  - the trained XGBoost model
-  - the precomputed importance score for every question
-  - the question rows (concept, marks, has_code, code_snippet, etc.)
+Bundles everything the lightweight server needs into recommender_model.pkl:
+  - the trained XGBoost model is used only to precompute importance
+  - precomputed importance score for every question
+  - the question rows (concept, marks, has_code, code_snippet, DIFFICULTY)
 
-Because of this, the deployed server does NOT need sentence-transformers or
-torch — it just reads the precomputed scores. That keeps memory low enough for
-free hosting.
+The deployed server reads the precomputed scores (no sentence-transformers /
+torch needed), so it stays small enough for free hosting.
 
 Run:
     python train.py --csv smartqbank_dataset.csv
@@ -28,6 +26,8 @@ EMBED_MODEL = "all-mpnet-base-v2"
 IMPORTANT_QUANTILE = 0.70
 RANDOM_STATE = 42
 
+VALID_DIFFICULTIES = {"easy", "medium", "hard"}
+
 
 def _to_binary(series: pd.Series) -> pd.Series:
     truthy = {"yes", "y", "1", "true", "t"}
@@ -36,7 +36,8 @@ def _to_binary(series: pd.Series) -> pd.Series:
 
 
 def _to_marks(series: pd.Series) -> pd.Series:
-    nums = series.astype(str).str.extract(r"([-+]?\d*\.?\d+)")[0]
+    nums = series.astype(str).str.replace(",", ".", regex=False)
+    nums = nums.str.extract(r"([-+]?\d*\.?\d+)")[0]
     return pd.to_numeric(nums, errors="coerce").fillna(0.0)
 
 
@@ -62,6 +63,16 @@ def _clean_code(val) -> str:
     return s
 
 
+def _clean_difficulty(val) -> str:
+    """Normalize to Easy/Medium/Hard; anything else -> '' (unlabeled)."""
+    if val is None:
+        return ""
+    s = str(val).strip().lower()
+    if s in VALID_DIFFICULTIES:
+        return s.title()  # Easy / Medium / Hard
+    return ""
+
+
 def load_data(csv_path: str) -> pd.DataFrame:
     df = pd.read_csv(csv_path)
     df.columns = [c.strip() for c in df.columns]
@@ -80,6 +91,11 @@ def load_data(csv_path: str) -> pd.DataFrame:
     else:
         df["Code_Snippet"] = ""
 
+    if "Difficulty" in df.columns:
+        df["Difficulty"] = df["Difficulty"].map(_clean_difficulty)
+    else:
+        df["Difficulty"] = ""
+
     for col in ("Concept", "Question", "Subject"):
         df[col] = df[col].astype(str).str.strip()
 
@@ -92,8 +108,10 @@ def load_data(csv_path: str) -> pd.DataFrame:
         print(f"[load] dropped {dropped} rows with blank Concept/Question/Subject")
 
     df = df.reset_index(drop=True)
+    diff_counts = df["Difficulty"].replace("", "(unlabeled)").value_counts().to_dict()
     print(f"[load] {len(df)} usable questions across "
           f"{df['Subject'].nunique()} subjects, {df['Concept'].nunique()} concepts")
+    print(f"[load] difficulty spread: {diff_counts}")
     return df
 
 
@@ -190,21 +208,22 @@ def main():
     print(classification_report(y_te, y_pred, digits=3))
     print("============================================\n")
 
-    # Precompute importance for EVERY question, so the server needs no model math.
     importance_all = clf.predict_proba(X)[:, 1]
 
-    # Bundle the lightweight data the deployed server will read.
     questions_table = df[["Subject", "Concept", "Question", "Marks",
-                          "repeat_count", "Has_Code", "Code_Snippet"]].copy()
+                          "repeat_count", "Has_Code", "Code_Snippet",
+                          "Difficulty"]].copy()
     questions_table["importance"] = importance_all
 
     bundle = {
         "questions": questions_table.to_dict(orient="records"),
         "subjects": sorted(df["Subject"].astype(str).unique().tolist()),
+        "difficulties": ["Easy", "Medium", "Hard"],
     }
     joblib.dump(bundle, args.out)
     print(f"[save] wrote {args.out} "
-          f"({len(bundle['questions'])} scored questions, ready for free hosting)")
+          f"({len(bundle['questions'])} scored questions w/ difficulty, "
+          f"ready for free hosting)")
 
 
 if __name__ == "__main__":

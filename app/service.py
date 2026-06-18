@@ -1,18 +1,18 @@
 """
 SmartQBank — Marks-target recommender — LIGHTWEIGHT FASTAPI SERVICE
 ==================================================================
-Reads recommender_model.pkl which now contains PRECOMPUTED importance scores
-for every question (produced by train.py). This server does NOT load
-sentence-transformers or torch, so it stays small enough for free hosting.
+Reads recommender_model.pkl (precomputed importance + question rows incl.
+Difficulty). No sentence-transformers / torch needed.
+
+NEW: optional `difficulty` filter on /recommend.
+  - difficulty=Any (or omitted) -> use all questions (current behavior)
+  - difficulty=Easy|Medium|Hard -> rebuild the WHOLE plan from only that
+    difficulty's questions. Unlabeled questions are excluded under a specific
+    difficulty. Concepts with no questions at that difficulty drop out.
 
 Run locally:
     set MODEL_PATH=recommender_model.pkl
     uvicorn app.service:app --port 8000
-
-Endpoints:
-    GET /recommend?subject=Data%20Structures&target=40
-    GET /subjects
-    GET /health
 """
 
 import os
@@ -33,6 +33,7 @@ app.add_middleware(
 )
 
 STATE: dict = {}
+VALID_DIFF = {"easy", "medium", "hard"}
 
 
 def _clean_code(val) -> str:
@@ -44,10 +45,16 @@ def _clean_code(val) -> str:
     return s
 
 
+def _norm_diff(val) -> str:
+    if val is None:
+        return ""
+    s = str(val).strip().lower()
+    return s.title() if s in VALID_DIFF else ""
+
+
 def _load_bundle():
     bundle = joblib.load(MODEL_PATH)
     df = pd.DataFrame(bundle["questions"])
-    # safety: make sure columns are the right types
     df["Subject"] = df["Subject"].astype(str)
     df["Concept"] = df["Concept"].astype(str)
     df["Question"] = df["Question"].astype(str)
@@ -56,12 +63,16 @@ def _load_bundle():
     df["importance"] = pd.to_numeric(df["importance"], errors="coerce").fillna(0.0)
     if "Code_Snippet" not in df.columns:
         df["Code_Snippet"] = ""
+    if "Difficulty" not in df.columns:
+        df["Difficulty"] = ""
+    df["Difficulty"] = df["Difficulty"].map(_norm_diff)
     STATE["df"] = df
     STATE["subjects"] = bundle.get(
         "subjects", sorted(df["Subject"].unique().tolist())
     )
+    STATE["difficulties"] = bundle.get("difficulties", ["Easy", "Medium", "Hard"])
     print(f"[startup] loaded {len(df)} precomputed questions; "
-          f"subjects: {STATE['subjects']}")
+          f"subjects: {STATE['subjects']}; difficulties: {STATE['difficulties']}")
 
 
 @app.on_event("startup")
@@ -79,9 +90,13 @@ def subjects():
     return {"subjects": STATE.get("subjects", [])}
 
 
+@app.get("/difficulties")
+def difficulties():
+    return {"difficulties": STATE.get("difficulties", ["Easy", "Medium", "Hard"])}
+
+
 @app.get("/reload")
 def reload_data():
-    """Reload recommender_model.pkl without restarting the server."""
     _load_bundle()
     return {"status": "reloaded", "questions_loaded": len(STATE["df"])}
 
@@ -90,6 +105,7 @@ def reload_data():
 def recommend(
     subject: str = Query(..., description="exact subject name"),
     target: float = Query(..., gt=0, description="target marks, e.g. 40"),
+    difficulty: str = Query("Any", description="Any | Easy | Medium | Hard"),
 ):
     df = STATE.get("df")
     if df is None:
@@ -101,8 +117,28 @@ def recommend(
             404, f"subject '{subject}' not found. Available: {STATE['subjects']}"
         )
 
+    # apply difficulty filter -> rebuild whole plan from that pool
+    diff = (difficulty or "Any").strip().lower()
+    if diff in VALID_DIFF:
+        pool = sub[sub["Difficulty"].str.lower() == diff]
+        diff_label = diff.title()
+    else:
+        pool = sub  # Any (or unknown) -> all questions
+        diff_label = "Any"
+
+    if pool.empty:
+        # No questions at this difficulty for this subject at all.
+        return {
+            "subject": sub["Subject"].iloc[0],
+            "target": target,
+            "difficulty": diff_label,
+            "projected_marks": 0.0,
+            "target_met": False,
+            "topics": [],
+        }
+
     topics = []
-    for concept, g in sub.groupby("Concept"):
+    for concept, g in pool.groupby("Concept"):
         importance = float(g["importance"].mean())
         avg_marks = float(g["Marks"].mean())
         expected = avg_marks * importance
@@ -116,6 +152,7 @@ def recommend(
                 "question": str(row["Question"]),
                 "has_code": has_code,
                 "code_snippet": code if code != "" else None,
+                "difficulty": _norm_diff(row.get("Difficulty", "")) or None,
             })
 
         topics.append({
@@ -138,6 +175,7 @@ def recommend(
     return {
         "subject": sub["Subject"].iloc[0],
         "target": target,
+        "difficulty": diff_label,
         "projected_marks": round(projected, 2),
         "target_met": projected >= target,
         "topics": chosen,
