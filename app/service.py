@@ -23,6 +23,10 @@ from fastapi.middleware.cors import CORSMiddleware
 
 MODEL_PATH = os.getenv("MODEL_PATH", "recommender_model.pkl")
 MAX_QUESTIONS_PER_CONCEPT = int(os.getenv("MAX_Q_PER_CONCEPT", "3"))
+# Topics contributing fewer than this many expected marks are considered
+# "negligible" and are not padded onto a plan. Keeps the list meaningful and
+# avoids a long tail of ~0-mark "Optional" topics when a target can't be met.
+MIN_TOPIC_CONTRIB = float(os.getenv("MIN_TOPIC_CONTRIB", "0.5"))
 
 app = FastAPI(title="SmartQBank Recommender (lightweight)")
 app.add_middleware(
@@ -165,18 +169,32 @@ def recommend(
 
     topics.sort(key=lambda t: t["importance"], reverse=True)
 
+    # Greedy pick until target reached, but never pad with negligible topics.
     chosen, projected = [], 0.0
     for t in topics:
         if projected >= target:
             break
+        # Stop once topics stop meaningfully contributing (avoids ~0-mark tail).
+        if t["expected_marks"] < MIN_TOPIC_CONTRIB:
+            break
         chosen.append(t)
         projected += t["expected_marks"]
+
+    # max reachable = sum of all meaningful topics at this difficulty
+    max_reachable = round(
+        sum(t["expected_marks"] for t in topics
+            if t["expected_marks"] >= MIN_TOPIC_CONTRIB),
+        2,
+    )
+
+    target_met = projected >= target
 
     return {
         "subject": sub["Subject"].iloc[0],
         "target": target,
         "difficulty": diff_label,
         "projected_marks": round(projected, 2),
-        "target_met": projected >= target,
+        "target_met": target_met,
+        "max_reachable": max_reachable,
         "topics": chosen,
     }
